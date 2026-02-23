@@ -51,15 +51,19 @@ app.use(express.static('public'));
 // ==========================================
 
 // --- AI Concept Generation ---
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai;
+if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'sk-placeholder-key-for-now') {
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 app.post('/api/ai/generate', async (req, res) => {
     try {
-        if (process.env.OPENAI_API_KEY) {
+        if (openai) {
             const response = await openai.images.generate({
                 model: "dall-e-3", prompt: "Architectural photo: " + req.body.prompt, n: 1, size: "1024x1024"
             });
             res.json({ success: true, imageUrl: response.data[0].url });
         } else {
+            // Fallback if no key is present
             setTimeout(() => res.json({ success: true, imageUrl: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80" }), 2000);
         }
     } catch (error) {
@@ -105,5 +109,6 @@ io.on('connection', (socket) => {
 // Serve Frontend
 // ==========================================
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
 
 server.listen(PORT, () => console.log(`BidBridge Master Server Live on port ${PORT}`));
